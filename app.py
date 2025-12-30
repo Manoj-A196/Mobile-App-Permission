@@ -11,26 +11,24 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# BLUE THEME (CUSTOM CSS)
+# TEAL / GREENISH-BLUE THEME (CUSTOM CSS)
 # --------------------------------------------------
 st.markdown("""
 <style>
-body {
-    background-color: #f5f9ff;
-}
-h1, h2, h3 {
-    color: #0b5ed7;
-}
+body { background-color: #f0fdfa; }
+h1, h2, h3 { color: #0f766e; }
 .stButton>button {
-    background-color: #0b5ed7;
+    background-color: #0f766e;
     color: white;
     border-radius: 8px;
 }
-.stButton>button:hover {
-    background-color: #084298;
-}
-.stDataFrame {
-    border: 1px solid #cfe2ff;
+.stButton>button:hover { background-color: #115e59; }
+.stDataFrame { border: 1px solid #99f6e4; }
+div[data-testid="metric-container"] {
+    background-color: #ecfeff;
+    border: 1px solid #67e8f9;
+    border-radius: 10px;
+    padding: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -44,7 +42,7 @@ st.caption("Advanced Permission Risk Detection for Mobile Applications")
 st.divider()
 
 # --------------------------------------------------
-# SESSION STATE FOR HISTORY
+# SESSION STATE (HISTORY)
 # --------------------------------------------------
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -61,24 +59,17 @@ app_name = st.selectbox(
 
 permissions = st.multiselect(
     "Select Permissions Requested by App",
-    [
-        "Camera",
-        "Location",
-        "Contacts",
-        "Microphone",
-        "Storage",
-        "SMS"
-    ]
+    ["Camera", "Location", "Contacts", "Microphone", "Storage", "SMS"]
 )
 
 # --------------------------------------------------
-# PERMISSION WEIGHTS & EXPLANATION
+# PERMISSION WEIGHTS & EXPLANATIONS
 # --------------------------------------------------
 permission_info = {
     "Camera": (20, "Can capture images and videos without user awareness"),
     "Location": (20, "Tracks real-time physical location"),
     "Contacts": (25, "Accesses personal contact list"),
-    "Microphone": (20, "Can record audio in background"),
+    "Microphone": (20, "Can record audio in the background"),
     "Storage": (10, "Reads and writes local files"),
     "SMS": (30, "Can read private messages and OTPs")
 }
@@ -96,19 +87,19 @@ if st.button("▶ Analyze Permissions"):
         total_score += score
         explanations.append(f"• **{p}** – {reason}")
 
-    # Risk Level
+    # Risk Level & Recommendation
     if total_score >= 60:
         risk = "High 🔴"
-        recommendation = "❌ Do NOT allow all permissions. Review carefully."
+        recommendation = "❌ Do NOT allow all permissions. Review and deny unnecessary ones."
     elif total_score >= 30:
         risk = "Medium 🟠"
-        recommendation = "⚠️ Allow only necessary permissions."
+        recommendation = "⚠️ Allow only essential permissions."
     else:
         risk = "Low 🟢"
         recommendation = "✅ Permissions are mostly safe."
 
     # --------------------------------------------------
-    # OUTPUT SECTION
+    # RESULTS
     # --------------------------------------------------
     st.subheader("📊 Analysis Result")
 
@@ -120,26 +111,30 @@ if st.button("▶ Analyze Permissions"):
         st.write(f"**Recommendation:** {recommendation}")
 
     with col2:
-        st.markdown("### 🔍 Permission Explanation")
-        for e in explanations:
-            st.write(e)
+        st.markdown("### 🔍 Permission Explanations")
+        if explanations:
+            for e in explanations:
+                st.write(e)
+        else:
+            st.write("• No permissions selected.")
 
     st.divider()
 
     # --------------------------------------------------
-    # GRAPH
+    # GRAPH (NUMERIC, GUARANTEED VISIBLE)
     # --------------------------------------------------
     st.subheader("📈 Permission Risk Distribution")
 
     graph_df = pd.DataFrame({
-        "Permission": list(permission_info.keys()),
         "Risk Score": [
             permission_info[p][0] if p in permissions else 0
             for p in permission_info.keys()
         ]
-    }).set_index("Permission")
+    }, index=list(permission_info.keys()))
 
     st.bar_chart(graph_df)
+
+    st.caption("Higher bars indicate higher privacy impact of permissions.")
 
     st.divider()
 
@@ -148,17 +143,16 @@ if st.button("▶ Analyze Permissions"):
     # --------------------------------------------------
     st.session_state.history.append({
         "App": app_name,
-        "Permissions": ", ".join(permissions),
+        "Permissions": ", ".join(permissions) if permissions else "None",
         "Risk Score": total_score,
         "Risk Level": risk
     })
 
 # --------------------------------------------------
-# HISTORY SECTION
+# HISTORY TABLE
 # --------------------------------------------------
 if st.session_state.history:
     st.subheader("🕘 Analysis History")
-
     history_df = pd.DataFrame(st.session_state.history)
     st.dataframe(history_df, use_container_width=True)
 
